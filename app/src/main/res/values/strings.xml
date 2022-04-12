@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Get Author</string>
+    <string name="message_enter_search_text">Enter a book name, or a part of a book name, or just some text from book to find the full book title and the author!</string>
+    <string name="search_edit_text">Search <font color='#FF0000'>*</font></string>
+    <string name="search_button_text">Search</string>
+    <string name="by">By -</string>
+</resources>
