@@ -14,7 +14,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class NetworkUtils {
 
     private static final String LOG_TAG = NetworkUtils.class.getSimpleName();
-    private static final String BASE_URL = "https://developers.google.com/books/docs/v1/reference/volumes/list?";
+    private static final String BASE_URL = "https://www.googleapis.com/books/v1/volumes?";
     private static final String QUERY_PARAM = "q";
     private static final String MAX_RESULTS = "maxResults";
     private static final String PRINT_TYPE = "printType";
@@ -30,19 +30,16 @@ public class NetworkUtils {
                     .appendQueryParameter(MAX_RESULTS, "10")
                     .appendQueryParameter(PRINT_TYPE, "books")
                     .build();
+            Log.d(LOG_TAG, String.valueOf(builtURI));
 
             URL requestURL = new URL(builtURI.toString());
-
             urlConnection = (HttpsURLConnection) requestURL.openConnection();
             urlConnection.setRequestMethod("GET");
             urlConnection.connect();
-
             InputStream inputStream = urlConnection.getInputStream();
-
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
             StringBuilder builder = new StringBuilder();
-
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 builder.append(line);
