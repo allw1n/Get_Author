@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
 
             if (new CheckConnection(this).checkConn()) {
-                new FetchDetails(viewResultBook, viewResultAuthor, progressBar).execute(search);
+                new TaskAsyncFetch(viewResultBook, viewResultAuthor, progressBar).execute(search);
             }
             else {
                 progressBar.setVisibility(View.GONE);

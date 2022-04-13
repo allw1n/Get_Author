@@ -1,71 +1,72 @@
 package com.example.getauthor;
 
-import android.os.AsyncTask;
-import android.view.View;
-import android.widget.ProgressBar;
+import android.net.Uri;
+import android.util.Log;
 
-import com.google.android.material.textview.MaterialTextView;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import javax.net.ssl.HttpsURLConnection;
 
-import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.List;
+public class FetchDetails {
 
-public class FetchDetails extends AsyncTask<String, Void, String> {
+    private static final String LOG_TAG = FetchDetails.class.getSimpleName();
+    private static final String BASE_URL = "https://www.googleapis.com/books/v1/volumes?";
+    private static final String QUERY_PARAM = "q";
+    private static final String MAX_RESULTS = "maxResults";
+    private static final String PRINT_TYPE = "printType";
 
-    private final WeakReference<MaterialTextView> viewBookName, viewAuthorName;
-    private final WeakReference<ProgressBar> progressBar;
+    public static String getBookInfo(String query) {
+        HttpsURLConnection urlConnection = null;
+        BufferedReader bufferedReader = null;
+        String bookJSONString = null;
 
-    public FetchDetails(MaterialTextView viewBookName, MaterialTextView viewAuthorName, ProgressBar progressBar) {
-        this.viewBookName = new WeakReference<>(viewBookName);
-        this.viewAuthorName = new WeakReference<>(viewAuthorName);
-        this.progressBar = new WeakReference<>(progressBar);
-    }
-
-    @Override
-    protected String doInBackground(String... strings) {
-        return NetworkUtils.getBookInfo(strings[0]);
-    }
-
-    @Override
-    protected void onPostExecute(String s) {
-        super.onPostExecute(s);
         try {
-            JSONObject jsonReceived = new JSONObject(s);
-            JSONArray itemsArray = jsonReceived.getJSONArray("items");
+            Uri builtURI = Uri.parse(BASE_URL).buildUpon()
+                    .appendQueryParameter(QUERY_PARAM, query)
+                    .appendQueryParameter(MAX_RESULTS, "10")
+                    .appendQueryParameter(PRINT_TYPE, "books")
+                    .build();
+            Log.d(LOG_TAG, String.valueOf(builtURI));
 
-            int i = 0;
-            String title = null;
-            String authors = null;
+            URL requestURL = new URL(builtURI.toString());
+            urlConnection = (HttpsURLConnection) requestURL.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+            InputStream inputStream = urlConnection.getInputStream();
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
-            while (i < itemsArray.length() && (title == null || authors == null)) {
-                JSONObject book = itemsArray.getJSONObject(i);
-                JSONObject volumeInfo = book.getJSONObject("volumeInfo");
-
-                try {
-                    title = volumeInfo.getString("title");
-                    authors = volumeInfo.getString("authors");
-                    authors = authors.replaceAll("[\"\\[\\]]", "").replace(",", ", ");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                i++;
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                builder.append(line);
+                builder.append("\n");
             }
 
-            progressBar.get().setVisibility(View.GONE);
-            if (title != null && authors != null) {
-                viewBookName.get().setText(title);
-                viewAuthorName.get().setText(R.string.by);
-                viewAuthorName.get().append(authors);
-            } else {
-                viewBookName.get().setText(R.string.no_result);
-            }
+            if (builder.length() == 0) return null;
+
+            bookJSONString = builder.toString();
+
         } catch (Exception e) {
-            progressBar.get().setVisibility(View.GONE);
-            viewBookName.get().setText(R.string.no_result);
             e.printStackTrace();
         }
+        finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        Log.d(LOG_TAG, bookJSONString);
+        return bookJSONString;
     }
 }
