@@ -13,12 +13,12 @@ import java.lang.ref.WeakReference;
 
 public class TaskAsyncFetch extends AsyncTask<String, Void, String> {
 
-    private final WeakReference<MaterialTextView> viewBookName, viewAuthorName;
+    private final WeakReference<MaterialTextView> viewResultBook, viewResultAuthor;
     private final WeakReference<ProgressBar> progressBar;
 
-    public TaskAsyncFetch(MaterialTextView viewBookName, MaterialTextView viewAuthorName, ProgressBar progressBar) {
-        this.viewBookName = new WeakReference<>(viewBookName);
-        this.viewAuthorName = new WeakReference<>(viewAuthorName);
+    public TaskAsyncFetch(MaterialTextView viewResultBook, MaterialTextView viewResultAuthor, ProgressBar progressBar) {
+        this.viewResultBook = new WeakReference<>(viewResultBook);
+        this.viewResultAuthor = new WeakReference<>(viewResultAuthor);
         this.progressBar = new WeakReference<>(progressBar);
     }
 
@@ -54,15 +54,15 @@ public class TaskAsyncFetch extends AsyncTask<String, Void, String> {
 
             progressBar.get().setVisibility(View.GONE);
             if (title != null && authors != null) {
-                viewBookName.get().setText(title);
-                viewAuthorName.get().setText(R.string.by);
-                viewAuthorName.get().append(authors);
+                viewResultBook.get().setText(title);
+                viewResultAuthor.get().setText(R.string.by);
+                viewResultAuthor.get().append(authors);
             } else {
-                viewBookName.get().setText(R.string.no_result);
+                viewResultBook.get().setText(R.string.no_result);
             }
         } catch (Exception e) {
             progressBar.get().setVisibility(View.GONE);
-            viewBookName.get().setText(R.string.no_result);
+            viewResultBook.get().setText(R.string.no_result);
             e.printStackTrace();
         }
     }

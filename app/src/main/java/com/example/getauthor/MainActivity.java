@@ -1,6 +1,10 @@
 package com.example.getauthor;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.Loader;
 
 import android.os.Bundle;
 import android.text.Editable;
@@ -16,13 +20,18 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textview.MaterialTextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
     private TextInputLayout layoutSearch;
     private TextInputEditText editSearch;
     private MaterialTextView viewResultBook, viewResultAuthor;
+    private ProgressBar progressBar;
+    private final static int LOADER_ID = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +44,11 @@ public class MainActivity extends AppCompatActivity {
         viewResultBook = binding.viewResultBook;
         viewResultAuthor = binding.viewResultAuthor;
         MaterialButton buttonSearch = binding.buttonSearch;
-        ProgressBar progressBar = binding.progressBar;
+        progressBar = binding.progressBar;
+
+        if (getSupportLoaderManager().getLoader(LOADER_ID) != null) {
+            getSupportLoaderManager().initLoader(LOADER_ID, null, this);
+        }
 
         HideKeyboard hideKeyboard = new HideKeyboard(this, this);
         hideKeyboard.setupUI(binding.getRoot());
@@ -70,7 +83,11 @@ public class MainActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
 
             if (new CheckConnection(this).checkConn()) {
-                new TaskAsyncFetch(viewResultBook, viewResultAuthor, progressBar).execute(search);
+                //new TaskAsyncFetch(viewResultBook, viewResultAuthor, progressBar).execute(search);
+
+                Bundle queryBundle = new Bundle();
+                queryBundle.putString("search", search);
+                getSupportLoaderManager().restartLoader(LOADER_ID, queryBundle, this);
             }
             else {
                 progressBar.setVisibility(View.GONE);
@@ -85,5 +102,59 @@ public class MainActivity extends AppCompatActivity {
                         .show();
             }
         });
+    }
+
+    @NonNull
+    @Override
+    public Loader<String> onCreateLoader(int id, @Nullable Bundle args) {
+        String search = "";
+        if (args != null) {
+            search = args.getString("search");
+        }
+        return new LoaderTaskAsyncFetch(this, search);
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<String> loader, String data) {
+        try {
+            JSONObject jsonReceived = new JSONObject(data);
+            JSONArray itemsArray = jsonReceived.getJSONArray("items");
+
+            int i = 0;
+            String title = null;
+            String authors = null;
+
+            while (i < itemsArray.length() && (title == null || authors == null)) {
+                JSONObject book = itemsArray.getJSONObject(i);
+                JSONObject volumeInfo = book.getJSONObject("volumeInfo");
+
+                try {
+                    title = volumeInfo.getString("title");
+                    authors = volumeInfo.getString("authors");
+                    authors = authors.replaceAll("[\"\\[\\]]", "").replace(",", ", ");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                i++;
+            }
+
+            progressBar.setVisibility(View.GONE);
+            if (title != null && authors != null) {
+                viewResultBook.setText(title);
+                viewResultAuthor.setText(R.string.by);
+                viewResultAuthor.append(authors);
+            } else {
+                viewResultBook.setText(R.string.no_result);
+            }
+        } catch (Exception e) {
+            progressBar.setVisibility(View.GONE);
+            viewResultBook.setText(R.string.no_result);
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<String> loader) {
+
     }
 }
